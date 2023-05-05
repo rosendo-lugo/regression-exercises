@@ -36,8 +36,17 @@ def get_zillow_data():
     df.yearbuilt = df.yearbuilt.astype(int)
     df.yearbuilt
     
+
+    # rename columns
+    df.columns
+    df = df.rename(columns={'bedroomcnt':'bedrooms', 'bathroomcnt':'bathrooms', 'calculatedfinishedsquarefeet':'area',
+       'taxvaluedollarcnt':'taxvalue', 'fips':'county'})
+        
+    # renamed the county codes inside county
+    df.county = df.county.map({6037:'LA', 6059:'Orange', 6111:'Ventura'})
     
-    df['tax_rate'] = round(df['taxamount']/df['taxvaluedollarcnt'],2)
+    # Added a new column named tax rate
+    df['tax_rate'] = round(df['taxamount']/df['taxvalue'],2)
     return df
 
 # This will clean the data. 
