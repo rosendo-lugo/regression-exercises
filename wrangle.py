@@ -32,34 +32,23 @@ def get_zillow_data():
     # drop any nulls in the dataset
     df = df.dropna()
     
-    # change the year to     
-    df.yearbuilt = df.yearbuilt.astype(int)
-    df.yearbuilt
-    
-
     # rename columns
     df.columns
     df = df.rename(columns={'bedroomcnt':'bedrooms', 'bathroomcnt':'bathrooms', 'calculatedfinishedsquarefeet':'area',
        'taxvaluedollarcnt':'taxvalue', 'fips':'county'})
+    
+    # change the dtype from float to int  
+    make_ints = ['bedrooms','area','taxvalue','yearbuilt','county']
+    for col in make_ints:
+        df[col] = df[col].astype(int)
         
-    # renamed the county codes inside county
+    # renamed the county codes inside countyß
     df.county = df.county.map({6037:'LA', 6059:'Orange', 6111:'Ventura'})
     
     # Added a new column named tax rate
     df['tax_rate'] = round(df['taxamount']/df['taxvalue'],2)
-    return df
-
-# This will clean the data. 
-def prep_zillow(df):
-    '''
-    This function will clean the the  dataset
-    '''
-    # drop any nulls in the dataset
-    df = df.dropna()
     
-    # change the year to     
-    df.yearbuilt = df.yearbuilt.astype(int)
-    df.yearbuilt
-
-
+    df = df [df.area < 25_000].copy()
+    df = df[df.taxvalue < df.taxvalue.quantile(.95)].copy()
+    
     return df
