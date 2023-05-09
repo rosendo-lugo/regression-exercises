@@ -13,7 +13,7 @@ from sklearn.preprocessing import RobustScaler
 from sklearn.preprocessing import QuantileTransformer
 
 
-
+# ----------------------------------------------------------------------------------
 def check_file_exists(fn, query, url):
     """
     check if file exists in my local directory, if not, pull from sql db
@@ -28,7 +28,8 @@ def check_file_exists(fn, query, url):
         df.to_csv(fn)
         return df
 
-
+    
+# ----------------------------------------------------------------------------------
 def get_zillow_data():
     # How to import a database from MySQL
     url = get_db_url('zillow')
@@ -64,6 +65,7 @@ def get_zillow_data():
     
     return df
 
+
 # ----------------------------------------------------------------------------------
 def get_zillow_split(df):
     train_validate, test = train_test_split(df, test_size=.2, random_state=123)
@@ -73,7 +75,6 @@ def get_zillow_split(df):
 
 
 # ----------------------------------------------------------------------------------
-
 def get_minmax_train_scaler(X_train, X_validate):
     
     columns=['bedrooms', 'bathrooms','area','yearbuilt','taxamount','tax_rate']
@@ -100,6 +101,7 @@ def get_minmax_train_scaler(X_train, X_validate):
     
     return X_tr_mm_scaler, X_v_mm_scaler, X_tr_mm_inv
 
+
 # ----------------------------------------------------------------------------------
 def get_std_train_scaler(X_train, X_validate):
     
@@ -118,8 +120,8 @@ def get_std_train_scaler(X_train, X_validate):
     
     return X_tr_std_scaler, X_v_std_scaler
 
-# ----------------------------------------------------------------------------------
 
+# ----------------------------------------------------------------------------------
 def get_robust_train_scaler(X_train, X_validate):
      
     columns=['bedrooms', 'bathrooms','area','yearbuilt','taxamount','tax_rate']
@@ -136,6 +138,7 @@ def get_robust_train_scaler(X_train, X_validate):
     X_v_rbs_scaler[columns] = rbs_scaler.transform(X_validate[columns])
     
     return X_tr_rbs_scaler, X_v_rbs_scaler
+
 
 # ----------------------------------------------------------------------------------
 def get_quant_normal(X_train):
