@@ -7,9 +7,9 @@ import seaborn as sns
 # ----------------------------------------------------------------------------------
 def plot_variable_pairs(tr_sub):
     # We can drop the redundant information in the upper right half of the chart if we like.
-    sns.pairplot(data=tr_sub.drop(columns='taxvalue'), corner=True, kind='reg')
-    return plt.show()
-
+    g = sns.pairplot(data=tr_sub.drop(columns='property_value'), corner=True, kind='reg')
+    g.map_lower(sns.regplot, line_kws={'color': 'orange'})
+    plt.show()
 
 # ----------------------------------------------------------------------------------
 def plot_categorical_and_continuous_vars(tr_sub, cat_var, cont_var):

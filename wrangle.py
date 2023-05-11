@@ -47,10 +47,10 @@ def get_zillow_data():
     # rename columns
     df.columns
     df = df.rename(columns={'bedroomcnt':'bedrooms', 'bathroomcnt':'bathrooms', 'calculatedfinishedsquarefeet':'area',
-       'taxvaluedollarcnt':'taxvalue', 'fips':'county'})
+       'taxvaluedollarcnt':'property_value', 'fips':'county'})
     
     # change the dtype from float to int  
-    make_ints = ['bedrooms','area','taxvalue','yearbuilt','county']
+    make_ints = ['bedrooms','area','property_value','yearbuilt','county']
     for col in make_ints:
         df[col] = df[col].astype(int)
         
@@ -58,12 +58,19 @@ def get_zillow_data():
     df.county = df.county.map({6037:'LA', 6059:'Orange', 6111:'Ventura'})
     
     # Added a new column named tax rate
-    df['tax_rate'] = round(df['taxamount']/df['taxvalue'],2)
+    df['tax_rate'] = round(df['taxamount']/df['property_value'],2)
     
     df = df [df.area < 25_000].copy()
-    df = df[df.taxvalue < df.taxvalue.quantile(.95)].copy()
+    df = df[df.property_value < df.property_value.quantile(.95)].copy()
     
-    return df
+    
+    # write the results to a CSV file
+    df.to_csv('df_prep.csv', index=False)
+
+    # read the CSV file into a Pandas dataframe
+    prep_df = pd.read_csv('df_prep.csv')
+    
+    return df, prep_df
 
 
 # ----------------------------------------------------------------------------------
