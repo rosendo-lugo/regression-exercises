@@ -9,6 +9,10 @@ import matplotlib.pyplot as plt
 
 # ----------------------------------------------------------------------------------
 def plot_residuals(y, yhat):
+    '''
+    y=train
+    yhat=yhat
+    '''
     # residual = actual - predicted
     residuals = y - yhat
     
@@ -21,7 +25,11 @@ def plot_residuals(y, yhat):
     
     return plt.show()
 # ----------------------------------------------------------------------------------
-def regression_errors(y, yhat):    
+def regression_errors(y, yhat): 
+    '''
+    y=target variable(column)
+    yhat=yhat
+    '''
     ## Sum of Squared Errors
     SSE = MSE * len(train)
 
@@ -31,10 +39,10 @@ def regression_errors(y, yhat):
 
     # Explained sum of squares
     # Sum the squares of the (prediction - mean of tax value)
-    ESS = ((yhat - train.tax_value.mean())**2).sum()
+    ESS = ((yhat - y.mean())**2).sum()
 
     # Mean squared error
-    MSE = mean_squared_error(train.tax_value, yhat)
+    MSE = mean_squared_error(y, yhat)
 
     # Root mean squared error
     # Raising to the power of 1/2 (0.5) is the same as taking the square root
@@ -44,6 +52,9 @@ def regression_errors(y, yhat):
 
 # ----------------------------------------------------------------------------------
 def baseline_mean_errors(y):
+    '''
+    y=train
+    '''
     # Use the MSE to find the SSE
     SSE_baseline = MSE_baseline * len(train)
 
@@ -57,6 +68,10 @@ def baseline_mean_errors(y):
 
 # ----------------------------------------------------------------------------------
 def better_than_baseline(y, yhat):
+    '''
+    y=train
+    yhat=yhat
+    '''
     # Calculate baseline residuals and SSE
     baseline_residual = y - y.mean()
     SSE_baseline = (baseline_residual ** 2).sum()
@@ -72,6 +87,10 @@ def better_than_baseline(y, yhat):
 
 # ----------------------------------------------------------------------------------
 def better_than_baseline(y, yhat):
+    '''
+    y=train
+    yhat=yhat
+    '''
     # Calculate the r2 using the r2_score
     r2_score(train.property_value, yhat)
 

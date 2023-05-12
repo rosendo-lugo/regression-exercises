@@ -6,11 +6,15 @@ import os
 from scipy import stats
 import sklearn.preprocessing
 from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import RobustScaler
 from sklearn.preprocessing import QuantileTransformer
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import r2_score
+from sklearn.feature_selection import SelectKBest, RFE, f_regression, SequentialFeatureSelector
 
 
 # ----------------------------------------------------------------------------------
@@ -41,28 +45,28 @@ def get_zillow_data():
     filename = 'zillow.csv'
     df = check_file_exists(filename, query, url)
     
-    # drop any nulls in the dataset
-    df = df.dropna()
-    
     # rename columns
     df.columns
     df = df.rename(columns={'bedroomcnt':'bedrooms', 'bathroomcnt':'bathrooms', 'calculatedfinishedsquarefeet':'area',
        'taxvaluedollarcnt':'property_value', 'fips':'county'})
     
-    # change the dtype from float to int  
-    make_ints = ['bedrooms','area','property_value','yearbuilt','county']
-    for col in make_ints:
-        df[col] = df[col].astype(int)
+    # Look at properties lessthan 25,000 sqft
+    df.area = df.area[df.area < 25_000].copy()
+    
+    # Property value reduce to 95% total
+    df.property_value = df.property_value[df.property_value < df.property_value.quantile(.95)].copy()
+    
         
+    # drop any nulls in the dataset
+    df = df.dropna()
+    
+    # change the dtype from float to int  
+    df.area = df.area.astype(int).copy()
+    df.county = df.county.astype(int).copy()
+    df.yearbuilt = df.yearbuilt.astype(int).copy()
+    
     # renamed the county codes inside countyß
     df.county = df.county.map({6037:'LA', 6059:'Orange', 6111:'Ventura'})
-    
-    # Added a new column named tax rate
-    df['tax_rate'] = round(df['taxamount']/df['property_value'],2)
-    
-    df = df [df.area < 25_000].copy()
-    df = df[df.property_value < df.property_value.quantile(.95)].copy()
-    
     
     # write the results to a CSV file
     df.to_csv('df_prep.csv', index=False)
@@ -76,11 +80,44 @@ def get_zillow_data():
 # ----------------------------------------------------------------------------------
 def get_split(df):
     train_validate, test = train_test_split(df, test_size=.2, random_state=123)
-    train, validate = train_test_split(train_validate, test_size=.3, random_state=123)
+    train, validate = train_test_split(train_validate, test_size=.25, random_state=123)
     
     return train, validate, test
 
+# ----------------------------------------------------------------------------------
 
+def scale_data(train,validate,test,to_scale):
+    """
+    to_scale = ['column1','column2','column3','column4','column5']
+    """
+    
+    #make copies for scaling
+    train_scaled = train.copy()
+    validate_scaled = validate.copy()
+    test_scaled = test.copy()
+
+    #scale them!
+    #make the thing
+    scaler = MinMaxScaler()
+
+    #fit the thing
+    scaler.fit(train[to_scale])
+
+    #use the thing
+    train_scaled[to_scale] = scaler.transform(train[to_scale])
+    validate_scaled[to_scale] = scaler.transform(validate[to_scale])
+    test_scaled[to_scale] = scaler.transform(test[to_scale])
+    
+    return train_scaled, validate_scaled, test_scaled
+
+# ----------------------------------------------------------------------------------
+def metrics_reg(y, yhat):
+    """
+    send in y_true, y_pred & returns RMSE, R2
+    """
+    rmse = mean_squared_error(y, yhat, squared=False)
+    r2 = r2_score(y, yhat)
+    return rmse, r2
 # ----------------------------------------------------------------------------------
 def get_minmax_train_scaler(X_train, X_validate):
     
@@ -108,31 +145,7 @@ def get_minmax_train_scaler(X_train, X_validate):
     
     return X_tr_mm_scaler, X_v_mm_scaler, X_tr_mm_inv
 
-# ----------------------------------------------------------------------------------
 
-def scale_data(train,validate,test,to_scale):
-    """
-    to_scale = ['column1','column2','column3','column4','column5']
-    """
-    
-    #make copies for scaling
-    train_scaled = train.copy()
-    validate_scaled = validate.copy()
-    test_scaled = test.copy()
-
-    #scale them!
-    #make the thing
-    scaler = MinMaxScaler()
-
-    #fit the thing
-    scaler.fit(train[to_scale])
-
-    #use the thing
-    train_scaled[to_scale] = scaler.transform(train[to_scale])
-    validate_scaled[to_scale] = scaler.transform(validate[to_scale])
-    test_scaled[to_scale] = scaler.transform(test[to_scale])
-    
-    return train_scaled, validate_scaled, test_scaled
 # ----------------------------------------------------------------------------------
 def get_std_train_scaler(X_train, X_validate):
     
@@ -185,4 +198,78 @@ def get_quant_normal(X_train):
     X_tr_quant = pd.DataFrame(quant.fit_transform(X_train[columns]),columns=columns)
     
     return quant_norm, X_tr_quant_norm, quant, X_tr_quant
+
+# ----------------------------------------------------------------------------------
+def get_object_cols(df):
+    '''
+    This function takes in a dataframe and identifies the columns that are object types
+    and returns a list of those column names. 
+    '''
+    # get a list of the column names that are objects (from the mask)
+    object_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
+    
+    return object_cols
+
+# ----------------------------------------------------------------------------------
+def get_numeric_cols(df):
+    '''
+    This function takes in a dataframe and identifies the columns that are object types
+    and returns a list of those column names. 
+    '''
+    # get a list of the column names that are objects (from the mask)
+    num_cols = df.select_dtypes(exclude=['object', 'category']).columns.tolist()
+    
+    return num_cols
+
+
+# ----------------------------------------------------------------------------------
+def select_kbest(X,y,k):
+    # X = X_train
+    # y = y_train
+    # k = the number of features to select (we are only sending two as of right now)
+    
+    # MAKE the thing
+    kbest = SelectKBest(f_regression, k=k)
+
+    # FIT the thing
+    kbest.fit(X, y)
+    
+    # Create a DATAFRAME
+    kbest_results = pd.DataFrame(
+                dict(pvalues=kbest.pvalues_, feature_scores=kbest.scores_),
+                index = X.columns)
+    
+    # we can apply this mask to the columns in our original dataframe
+    top_k = X.columns[kbest.get_support()]
+    
+    return top_k
+# ----------------------------------------------------------------------------------
+def rfe(X,v,y,k):
+    '''
+    # X = X_train_scaled
+    # v = X_validate_scaled
+    # y = y_train
+    # k = the number of features to select
+    '''
+    
+    # make a model object to use in RFE process.
+    # The model is here to give us metrics on feature importance and model score
+    # allowing us to recursively reduce the number of features to reach our desired space
+    model = LinearRegression()
+    
+    # MAKE the thing
+    rfe = RFE(model, n_features_to_select=k)
+
+    # FIT the thing
+    rfe.fit(X, y)
+    
+    X_train_rfe = pd.DataFrame(rfe.transform(X),index=X.index,
+                                          columns = X.columns[rfe.support_])
+    
+    X_val_rfe = pd.DataFrame(rfe.transform(v),index=v.index,
+                                      columns = v.columns[rfe.support_])
+    
+    top_k_rfe = X.columns[rfe.get_support()]
+    
+    return top_k_rfe, X_train_rfe, X_val_rfe
 
