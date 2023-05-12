@@ -77,6 +77,6 @@ def better_than_baseline(y, yhat):
 
     # Check if the model has R square higher than .5
     if R_2 > .5:
-        print("The model performs better than as it's.")
+        print("The model performs better than as it's closer to 1.")
     else:
-        print("The model does not perform better than the baseline model.")
+        print("The model does not perform better as it's too far away from 1.")

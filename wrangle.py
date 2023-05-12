@@ -74,9 +74,9 @@ def get_zillow_data():
 
 
 # ----------------------------------------------------------------------------------
-def get_zillow_split(df):
+def get_split(df):
     train_validate, test = train_test_split(df, test_size=.2, random_state=123)
-    train, validate = train_test_split(train_validate, test_size=.25, random_state=123)
+    train, validate = train_test_split(train_validate, test_size=.3, random_state=123)
     
     return train, validate, test
 
@@ -108,7 +108,31 @@ def get_minmax_train_scaler(X_train, X_validate):
     
     return X_tr_mm_scaler, X_v_mm_scaler, X_tr_mm_inv
 
+# ----------------------------------------------------------------------------------
 
+def scale_data(train,validate,test,to_scale):
+    """
+    to_scale = ['column1','column2','column3','column4','column5']
+    """
+    
+    #make copies for scaling
+    train_scaled = train.copy()
+    validate_scaled = validate.copy()
+    test_scaled = test.copy()
+
+    #scale them!
+    #make the thing
+    scaler = MinMaxScaler()
+
+    #fit the thing
+    scaler.fit(train[to_scale])
+
+    #use the thing
+    train_scaled[to_scale] = scaler.transform(train[to_scale])
+    validate_scaled[to_scale] = scaler.transform(validate[to_scale])
+    test_scaled[to_scale] = scaler.transform(test[to_scale])
+    
+    return train_scaled, validate_scaled, test_scaled
 # ----------------------------------------------------------------------------------
 def get_std_train_scaler(X_train, X_validate):
     
@@ -161,3 +185,4 @@ def get_quant_normal(X_train):
     X_tr_quant = pd.DataFrame(quant.fit_transform(X_train[columns]),columns=columns)
     
     return quant_norm, X_tr_quant_norm, quant, X_tr_quant
+
