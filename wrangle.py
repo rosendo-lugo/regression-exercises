@@ -32,50 +32,45 @@ def check_file_exists(fn, query, url):
         df.to_csv(fn)
         return df
 
-    
 # ----------------------------------------------------------------------------------
 def get_zillow_data():
     # How to import a database from MySQL
     url = get_db_url('zillow')
     query = '''
-    select bedroomcnt, bathroomcnt, calculatedfinishedsquarefeet, taxvaluedollarcnt, yearbuilt, taxamount, fips
+    select bedroomcnt, bathroomcnt, calculatedfinishedsquarefeet, taxvaluedollarcnt, taxamount, yearbuilt, fips
     from properties_2017
     where propertylandusetypeid = 261
-            '''
+    '''
     filename = 'zillow.csv'
     df = check_file_exists(filename, query, url)
     
     # rename columns
     df.columns
     df = df.rename(columns={'bedroomcnt':'bedrooms', 'bathroomcnt':'bathrooms', 'calculatedfinishedsquarefeet':'area',
-       'taxvaluedollarcnt':'property_value', 'fips':'county'})
+       'taxvaluedollarcnt':'taxvalue', 'fips':'county'})
     
-    # Look at properties lessthan 25,000 sqft
-    df.area = df.area[df.area < 25_000].copy()
+    # Look at properties less than 25,000 sqft
+    df = df[df.area < 25_000]
     
     # Property value reduce to 95% total
-    df.property_value = df.property_value[df.property_value < df.property_value.quantile(.95)].copy()
-    
+    df = df[df.taxvalue < df.taxvalue.quantile(.95)]
         
     # drop any nulls in the dataset
     df = df.dropna()
     
     # change the dtype from float to int  
-    df.area = df.area.astype(int).copy()
-    df.county = df.county.astype(int).copy()
-    df.yearbuilt = df.yearbuilt.astype(int).copy()
+    df[['area', 'yearbuilt']] = df[['area', 'yearbuilt']].astype(int)
     
-    # renamed the county codes inside countyß
-    df.county = df.county.map({6037:'LA', 6059:'Orange', 6111:'Ventura'})
+    # rename the county codes inside county
+    df['county'] = df['county'].map({6037: 'LA', 6059: 'Orange', 6111: 'Ventura'})
     
     # write the results to a CSV file
-    df.to_csv('df_prep.csv', index=False)
+    df.to_csv('zillow_prep.csv', index=False)
 
     # read the CSV file into a Pandas dataframe
-    prep_df = pd.read_csv('df_prep.csv')
+    prep_df = pd.read_csv('zillow_prep.csv')
     
     return df, prep_df
-
 
 # ----------------------------------------------------------------------------------
 def get_split(df):
